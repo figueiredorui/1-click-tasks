@@ -1,0 +1,83 @@
+{
+    "manifestVersion": 1.0,
+    "id": "vsts-work-item-one-click-tasks",
+    "version": "0.1.48",
+    "name": "1-Click Tasks",
+    "description": "Add tasks to User story or Bugs from predefined templates using a single click.",
+    "public": false,
+    "publisher": "ruifig",
+    "repository": {
+        "type": "git",
+        "uri": "https://github.com/figueiredorui/1-click-tasks"
+    },
+    "icons": {
+        "default": "img/one-click.png"
+    },
+    "screenshots": [
+        {
+            "path": "img/screen01.png"
+        },
+        {
+            "path": "img/screen02.png"
+        },
+        {
+            "path": "img/screen03.png"
+        }
+    ],
+    "tags": [
+        "Tasks"
+    ],
+    "categories": [
+        "Plan and track"
+    ],
+    "content": {
+        "details": {
+            "path": "overview.md"
+        }
+    },
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],
+    "scopes": [
+        "vso.work",
+        "vso.work_write"
+    ],
+    "files": [
+        {
+            "path": "img",
+            "addressable": true
+        },
+        {
+            "path": "toolbar.html",
+            "addressable": true
+        },
+        {
+            "path": "scripts/app.js",
+            "addressable": true
+        },
+        {
+            "path": "lib/VSS.SDK.min.js",
+            "addressable": true
+        }
+    ],
+    "contributions": [
+        {
+            "id": "create-child-task-work-item-button",
+            "type": "ms.vss-web.action",
+            "description": "1-click tasks",
+            "targets": [
+                "ms.vss-work-web.work-item-toolbar-menu"
+            ],
+            "properties": {
+                "text": " 1-click tasks",
+                "title": "1-click tasks",
+                "toolbarText": "1-click tasks",                
+                "icon": "img/one-click16.png",
+                "uri": "toolbar.html",
+                "registeredObjectId": "create-child-task-work-item-button"
+            }
+        }
+    ]
+}
