@@ -3,7 +3,7 @@
 Team Services allows you to create work item templates.
 With work item templates you can quickly create work items which have pre-populated values for your team's commonly used fields.
 
-1-Click Tasks uses predefined task templates to add them to a User Story or Bug using a single click.
+1-Click Tasks uses predefined task templates and add them to a User Story or Bug using a single click.
 
 ### Setup your Task templates ###
 
@@ -19,7 +19,7 @@ Find 1-Click Tasks on toolbar menu
 
 ### Done ###
 
-Now you have task associates with the Story/Bug
+Now you have tasks associated with the User Story or Bug
 
 ![Export](img/screen03.png)
 
