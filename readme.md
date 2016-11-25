@@ -11,20 +11,20 @@ With work item templates you can quickly create work items which have pre-popula
 
 Create your task templates
 
-<img src="img/screen01.png" alt="Create your task templates" />
+<img src="src/img/screen01.png" alt="Create your task templates" />
 
 
 ### Create / open a user Story/Bug ###
 
 Find 1-Click Tasks on toolbar menu
 
-<img src="img/screen02.png" alt="1-Click Tasks on the menu"/>
+<img src="src/img/screen02.png" alt="1-Click Tasks on the menu"/>
 
 ### Done ###
 
 Now you have task associates with the Story/Bug
 
-<img src="img/screen03.png" alt="Done"/>
+<img src="src/img/screen03.png" alt="Done"/>
 
 
 ## Usage ##
