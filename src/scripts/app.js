@@ -1,4 +1,4 @@
-define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q"], function (_WorkItemServices, _WorkItemRestClient, Q) {
+define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q", "VSS/Controls", "VSS/Controls/StatusIndicator"], function (_WorkItemServices, _WorkItemRestClient, Q, Controls, StatusIndicator) {
 
     function getWorkItemFormService() {
         return _WorkItemServices.WorkItemFormService.getService();
@@ -95,7 +95,11 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q"]
                         url: response.url,
                     }]);
                 //Save 
-                service.beginSaveWorkItem();
+                service.beginSaveWorkItem(function (response) {
+                    WriteLog(" Saved");
+                }, function (error) {
+                    WriteLog(" Error saving");
+                });
             });
     }
 
@@ -104,7 +108,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q"]
             // only add task if none
             var childs = value.find(function (v) { return v.rel == "System.LinkTypes.Hierarchy-Forward"; })
             if (childs) {
-                console.log("log [1]: Already has child tasks");
+                WriteLog(" Already has child tasks");
                 return;
             }
             return childs;
@@ -116,7 +120,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q"]
         var witClient = _WorkItemRestClient.getClient();
 
         hasChildTask(service).then(function (value) {
-
+            var waitcontrol = startWaitControl();
             // Get the current values for a few of the common fields
             service.getFieldValues(["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"]).then(
                 function (value) {
@@ -126,49 +130,66 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q"]
 
                         // get Templates
                         getTemplates().then(function (response) {
-                            if (response.length == 0)
-                                console.log('No task templates found')
+                            WriteLog('Templates: ' + response.count)
                             // Create child task
                             response.value.forEach(function (template) {
 
                                 getTemplate(template.id).then(function (taskTemplate) {
 
                                     createTask(witClient, service, WIT, taskTemplate)
+                                    endWaitControl(waitcontrol);
                                 });
                             }, this);
+                            
 
                         })
                     }
+                    else {
+                        WriteLog('only create child task for Product Backlog Item and Bug')
+                    }
+                    //endWaitControl(waitcontrol);
                 })
 
         })
     }
 
+    function WriteLog(msg) {
+       // console.log(msg);
+    }
+
+    function startWaitControl() {
+        var isAlreadyRunning = $("#waitcontrol").attr("running") === "true";
+        if (isAlreadyRunning) {
+            return null;
+        }
+        else {
+            var waitControlOptions = {
+                //target: $(".section-container"),
+                message: "loading...",
+                // backgroundColor: "transparent"
+            };
+            var waitcontrol = Controls.create(StatusIndicator.WaitControl, $(".section-container"), waitControlOptions);
+            waitcontrol.startWait();
+            WriteLog('waitcontrol.startWait()')
+            $("#waitcontrol").attr("running", "true");
+            return waitcontrol;
+        }
+    }
+    function endWaitControl(waitcontrol) {
+        if (waitcontrol) {
+            waitcontrol.endWait();
+            WriteLog('waitcontrol.endWait()')
+            $("#waitcontrol").attr("running", "false");
+        }
+    }
+
     return {
-        log: function (msg) {
-            //console.log("log [1]: " + msg);
-        },
+
         create: function (context) {
             getWorkItemFormService().then(function (service) {
                 AddTasks(service)
             })
         },
-        create_obsolete: function (context) {
-            getWorkItemFormService().then(function (service) {
-                service.hasActiveWorkItem().then(function (response) {
-                    if (response == false) {
-                        getWorkItemFormNavigationService().then(function (workItemNavSvc) {
-                            workItemNavSvc.openWorkItem(context.workItemIds[0]).then(function () {
-                                VSS.init();
-                                AddTasks(service)
-                            });
-                        });
-                    }
-                    else {
-                        AddTasks(service)
-                    }
-                })
-            })
-        }
+
     }
 });
