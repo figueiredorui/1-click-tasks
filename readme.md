@@ -1,5 +1,7 @@
 ## 1-Click Tasks ##
 
+<a href="https://marketplace.visualstudio.com/items?itemName=ruifig.vsts-work-item-one-click-tasks" target="_blank">1-Click Tasks</a>
+
 Add tasks to User story or Bugs from predefined templates using a single click.
 
 Team Services allows you to create work item templates.

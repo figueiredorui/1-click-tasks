@@ -1,5 +1,7 @@
 ## 1-Click Tasks ##
 
+Please check an enhanced version of this extension <a href="https://marketplace.visualstudio.com/items?itemName=ruifig.vsts-work-item-one-click-child-links" target="_blank">1-Click Child-Links</a>
+
 Team Services allows you to create work item templates.
 With work item templates you can quickly create work items which have pre-populated values for your team's commonly used fields.
 
