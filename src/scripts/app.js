@@ -52,15 +52,27 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
                 });
         }
 
+        function IsPropertyValid(taskTemplate, key) {
+            if (taskTemplate.fields.hasOwnProperty(key) == false) {
+                return false;
+            }
+            if (key.indexOf('System.Tags') >= 0) { //not supporting tags for now
+                return false;
+            }
+            if (taskTemplate.fields[key].toLowerCase() == '@me') { //not supporting current identity
+                return false;
+            }
+
+            return true;
+        }
+
         function createTask(witClient, service, WIT, taskTemplate) {
 
             var task = [];
 
             for (var key in taskTemplate.fields) {
-                if (taskTemplate.fields.hasOwnProperty(key)) {
-                    if (key.indexOf('System.Tags') == -1) { //not supporting tags for now
-                        task.push({ "op": "add", "path": "/fields/" + key, "value": taskTemplate.fields[key] })
-                    }
+                if (IsPropertyValid(taskTemplate, key)) {
+                    task.push({ "op": "add", "path": "/fields/" + key, "value": taskTemplate.fields[key] })
                 }
             }
 
@@ -74,6 +86,8 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
                 task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": WIT['System.IterationPath'] })
 
             if (taskTemplate.fields['System.AssignedTo'] == null)
+                task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+            else if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me')
                 task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
 
             witClient.createWorkItem(task, VSS.getWebContext().project.name, 'Task')
@@ -167,7 +181,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
                 dialogSvc.openMessageDialog(message, dialogOptions)
                     .then(function (dialog) {
                         //console.log('Ok');
-                    },function (dialog) {
+                    }, function (dialog) {
                         //console.log('Cancel');
                     });
             });
