@@ -1,5 +1,7 @@
-define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q", "VSS/Controls", "VSS/Controls/StatusIndicator", "VSS/Controls/Dialogs"],
-    function (_WorkItemServices, _WorkItemRestClient, Q, Controls, StatusIndicator, Dialogs) {
+define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS/Work/RestClient", "q", "VSS/Controls", "VSS/Controls/StatusIndicator", "VSS/Controls/Dialogs"],
+    function (_WorkItemServices, _WorkItemRestClient, workRestClient, Q, Controls, StatusIndicator, Dialogs) {
+
+        var ctx = null;
 
         function getWorkItemFormService() {
             return _WorkItemServices.WorkItemFormService.getService();
@@ -10,7 +12,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
         }
 
         function apiUrlBase() {
-            var ctx = VSS.getWebContext();
+            
             var collection = ctx.collection.uri;
             var project = ctx.project.name;
             var team = ctx.team.name;
@@ -62,11 +64,14 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
             if (taskTemplate.fields[key].toLowerCase() == '@me') { //not supporting current identity
                 return false;
             }
+            if (taskTemplate.fields[key].toLowerCase() == '@currentiteration') { //not supporting current iteration
+                return false;
+            }
 
             return true;
         }
 
-        function createTask(witClient, service, WIT, taskTemplate) {
+        function createTask(witClient, service, WIT, taskTemplate, teamSettings) {
 
             var task = [];
 
@@ -84,11 +89,13 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
 
             if (taskTemplate.fields['System.IterationPath'] == null)
                 task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": WIT['System.IterationPath'] })
+            else if (taskTemplate.fields['System.IterationPath'].toLowerCase() == '@currentiteration')
+                task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": teamSettings.backlogIteration.name + teamSettings.defaultIteration.path })  
 
             if (taskTemplate.fields['System.AssignedTo'] == null)
                 task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
             else if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me')
-                task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+                task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": ctx.user.uniqueName })
 
             witClient.createWorkItem(task, VSS.getWebContext().project.name, 'Task')
                 .then(function (response) {
@@ -121,8 +128,14 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
         function AddTasks(service) {
 
             var witClient = _WorkItemRestClient.getClient();
+            var workClient = workRestClient.getClient();
 
-            hasChildTask(service).then(function (value) {
+            var team = {
+                projectId: ctx.project.id,
+                teamId: ctx.team.id
+            }
+
+            workClient.getTeamSettings(team).then(function (teamSettings) {
                 // Get the current values for a few of the common fields
                 service.getFieldValues(["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"]).then(
                     function (value) {
@@ -138,7 +151,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
                                 response.value.forEach(function (template) {
 
                                     getTemplate(template.id).then(function (taskTemplate) {
-                                        createTask(witClient, service, WIT, taskTemplate)
+                                        createTask(witClient, service, WIT, taskTemplate, teamSettings)
                                     });
                                 }, this);
                             })
@@ -190,6 +203,11 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "q",
         return {
 
             create: function (context) {
+                console.log('init');
+                ctx = VSS.getWebContext();
+
+
+
                 getWorkItemFormService().then(function (service) {
                     AddTasks(service)
                 })
