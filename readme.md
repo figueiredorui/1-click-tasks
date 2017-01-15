@@ -1,8 +1,8 @@
 ## 1-Click Tasks ##
 
-<a href="https://marketplace.visualstudio.com/items?itemName=ruifig.vsts-work-item-one-click-tasks" target="_blank">1-Click Tasks</a>
+1-Click Tasks is a Visual Studio Team Services extension to add tasks to User story or Bugs from predefined templates using a single click.
 
-Add tasks to User story or Bugs from predefined templates using a single click.
+Download <a href="https://marketplace.visualstudio.com/items?itemName=ruifig.vsts-work-item-one-click-tasks" target="_blank">here</a>
 
 Team Services allows you to create work item templates.
 With work item templates you can quickly create work items which have pre-populated values for your team's commonly used fields.
