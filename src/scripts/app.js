@@ -12,7 +12,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
         }
 
         function apiUrlBase() {
-            
+
             var collection = ctx.collection.uri;
             var project = ctx.project.name;
             var team = ctx.team.name;
@@ -90,7 +90,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             if (taskTemplate.fields['System.IterationPath'] == null)
                 task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": WIT['System.IterationPath'] })
             else if (taskTemplate.fields['System.IterationPath'].toLowerCase() == '@currentiteration')
-                task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": teamSettings.backlogIteration.name + teamSettings.defaultIteration.path })  
+                task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": teamSettings.backlogIteration.name + teamSettings.defaultIteration.path })
 
             if (taskTemplate.fields['System.AssignedTo'] == null)
                 task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
@@ -147,13 +147,14 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                                 if (response.count == 0) {
                                     ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
                                 }
-                                // Create child task
-                                response.value.forEach(function (template) {
+                                // created tasks alphabetical 
+                                var templates = response.value.sort(SortTemplates);
+                                var chain = Q.when();
+                                templates.forEach(function (template) {
+                                    chain = chain.then(createTaskFromtemplate(witClient, service, WIT, template, teamSettings));
+                                });
+                                return chain;
 
-                                    getTemplate(template.id).then(function (taskTemplate) {
-                                        createTask(witClient, service, WIT, taskTemplate, teamSettings)
-                                    });
-                                }, this);
                             })
                         }
                         else {
@@ -161,6 +162,15 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                         }
                     })
             })
+        }
+
+        function createTaskFromtemplate(witClient, service, WIT, template, teamSettings) {
+            return function () {
+                return getTemplate(template.id).then(function (taskTemplate) {
+                    // Create child task
+                    createTask(witClient, service, WIT, taskTemplate, teamSettings)
+                });;
+            };
         }
 
         function IsRequirementType(WIT) {
@@ -199,6 +209,15 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                     });
             });
         }
+
+        function SortTemplates(a, b) {
+            var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+            if (nameA < nameB) //sort string ascending
+                return -1;
+            if (nameA > nameB)
+                return 1;
+            return 0; //default return value (no sorting)
+        };
 
         return {
 
