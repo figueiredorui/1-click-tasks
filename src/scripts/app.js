@@ -168,9 +168,28 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             return function () {
                 return getTemplate(template.id).then(function (taskTemplate) {
                     // Create child task
-                    createTask(witClient, service, WIT, taskTemplate, teamSettings)
+                    if (IsValidTemplate(WIT, taskTemplate)) {
+                        createTask(witClient, service, WIT, taskTemplate, teamSettings)
+                    }
                 });;
             };
+        }
+
+        function IsValidTemplate(currentWorkItem, taskTemplate) {
+
+            var filters = taskTemplate.description.match(/[^[\]]+(?=])/g)
+            if (filters) {
+                var isValid = false;
+                for (var i = 0; i < filters.length; i++) {
+                    isValid = filters[i].split(',').includes(currentWorkItem["System.WorkItemType"]);
+                    if (isValid)
+                        break;
+                }
+                return isValid;
+            } else {
+                return true;
+            }
+
         }
 
         function IsRequirementType(WIT) {
