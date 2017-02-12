@@ -28,6 +28,13 @@ Now you have tasks associated with the User Story or Bug
 
 <img src="src/img/screen03.png" alt="Done"/>
 
+## Release notes ##
+
+* v0.3.0 - Enforce correct order when adding child links to work item
+
+* v0.4.0 - Identifier to distinguish templates sets to be added in a single click  <a href="https://github.com/figueiredorui/1-click-tasks/wiki/Group-templates-with-identifier" target="_blank">Wiki</a>
+
+
 
 ## Usage ##
 
