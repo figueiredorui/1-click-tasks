@@ -16,7 +16,6 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             var collection = ctx.collection.uri;
             var project = ctx.project.name;
             var team = ctx.team.name;
-
             var url = collection + project + '/' + team + '/_apis/wit';
 
             return url;
@@ -25,9 +24,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
         function getTemplates() {
             return VSS.getAccessToken()
                 .then(function (response) {
-
                     var url = apiUrlBase() + '/templates?workItemTypeName=Task'
-
                     return $.ajax({
                         url: url,
                         dataType: 'json',
@@ -67,7 +64,6 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             if (taskTemplate.fields[key].toLowerCase() == '@currentiteration') { //not supporting current iteration
                 return false;
             }
-
             return true;
         }
 
@@ -92,25 +88,52 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             else if (taskTemplate.fields['System.IterationPath'].toLowerCase() == '@currentiteration')
                 task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": teamSettings.backlogIteration.name + teamSettings.defaultIteration.path })
 
-            if (taskTemplate.fields['System.AssignedTo'] == null)
-                task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+            if (taskTemplate.fields['System.AssignedTo'] == null) {
+                if (WIT['System.AssignedTo'] != null)
+                    task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+            }
             else if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me')
                 task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": ctx.user.uniqueName })
 
             witClient.createWorkItem(task, VSS.getWebContext().project.name, 'Task')
                 .then(function (response) {
                     //Add relation
-                    service.addWorkItemRelations([
-                        {
-                            rel: "System.LinkTypes.Hierarchy-Forward",
-                            url: response.url,
-                        }]);
-                    //Save 
-                    service.beginSaveWorkItem(function (response) {
-                        //WriteLog(" Saved");
-                    }, function (error) {
-                        ShowDialog(" Error saving: " + response);
-                    });
+                    if (service != null) {
+                        service.addWorkItemRelations([
+                            {
+                                rel: "System.LinkTypes.Hierarchy-Forward",
+                                url: response.url,
+                            }]);
+                        //Save 
+                        service.beginSaveWorkItem(function (response) {
+                            //WriteLog(" Saved");
+                        }, function (error) {
+                            ShowDialog(" Error saving: " + response);
+                        });
+                    }
+                    else {
+                        //save using RestClient
+                        var workItemId = WIT['System.Id']
+                        var document = [{
+                            op: "add",
+                            path: '/relations/-',
+                            value: {
+                                rel: "System.LinkTypes.Hierarchy-Forward",
+                                url: response.url,
+                                attributes: {
+                                    isLocked: false,
+                                }
+                            }
+                        }];
+
+                        witClient.updateWorkItem(document, workItemId)
+                            .then(function (response) {
+                                var a = response;
+                                VSS.getService(VSS.ServiceIds.Navigation).then(function (navigationService) {
+                                    navigationService.reload();
+                                });
+                            });
+                    }
                 });
         }
 
@@ -125,7 +148,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             });
         }
 
-        function AddTasks(service) {
+        function AddTasksOnForm(service) {
 
             var witClient = _WorkItemRestClient.getClient();
             var workClient = workRestClient.getClient();
@@ -164,6 +187,46 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             })
         }
 
+        function AddTasksOnGrid(workItemId) {
+
+            var witClient = _WorkItemRestClient.getClient();
+            var workClient = workRestClient.getClient();
+
+            var team = {
+                projectId: ctx.project.id,
+                teamId: ctx.team.id
+            }
+
+            workClient.getTeamSettings(team).then(function (teamSettings) {
+                // Get the current values for a few of the common fields
+                witClient.getWorkItem(workItemId, ["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"])
+                    .then(function success(response) {
+                        var WIT = response.fields
+                        // only create child task for Product Backlog Item and Bug
+                        if (IsRequirementType(WIT)) {
+                            // get Templates
+                            getTemplates().then(function (response) {
+                                if (response.count == 0) {
+                                    ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
+                                }
+                                // created tasks alphabetical 
+                                var templates = response.value.sort(SortTemplates);
+                                var chain = Q.when();
+                                templates.forEach(function (template) {
+                                    chain = chain.then(createTaskFromtemplate(witClient, null, WIT, template, teamSettings));
+                                });
+                                return chain;
+
+                            })
+                        }
+                        else {
+                            ShowDialog('Only creates child tasks for Product Backlog Items and Bugs.')
+                            Q.reject();
+                        }
+                    })
+            })
+        }
+
         function createTaskFromtemplate(witClient, service, WIT, template, teamSettings) {
             return function () {
                 return getTemplate(template.id).then(function (taskTemplate) {
@@ -174,6 +237,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                 });;
             };
         }
+
 
         function IsValidTemplate(currentWorkItem, taskTemplate) {
 
@@ -189,7 +253,6 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             } else {
                 return true;
             }
-
         }
 
         function IsRequirementType(WIT) {
@@ -239,17 +302,39 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
         };
 
         return {
-
             create: function (context) {
                 console.log('init');
                 ctx = VSS.getWebContext();
-
-
-
+                /*
+                var waitControlOptions = {
+                    target: $("#container"),
+                    message: "Saving...",
+                    backgroundColor: "transparent"
+                };
+                var waitcontrol = Controls.create(StatusIndicator.WaitControl, $("#container"), waitControlOptions);
+                waitcontrol.startWait();
+                */
                 getWorkItemFormService().then(function (service) {
-                    AddTasks(service)
+                    service.hasActiveWorkItem()
+                        .then(function success(response) {
+                            if (response == true) {
+                                //form is open
+                                AddTasksOnForm(service);
+                            }
+                            else {
+                                // on grid
+                                var workItemId = 0
+                                if (context.workItemIds && context.workItemIds.length > 0) {
+                                    workItemId = context.workItemIds[0];
+                                }
+                                else if (context.id) {
+                                    workItemId = context.id;
+                                }
+
+                                AddTasksOnGrid(workItemId);
+                            }
+                        });
                 })
             },
-
         }
     });
