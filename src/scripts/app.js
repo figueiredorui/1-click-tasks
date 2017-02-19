@@ -158,33 +158,36 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                 teamId: ctx.team.id
             }
 
-            workClient.getTeamSettings(team).then(function (teamSettings) {
-                // Get the current values for a few of the common fields
-                service.getFieldValues(["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"]).then(
-                    function (value) {
-                        var WIT = value
-                        // only create child task for Product Backlog Item and Bug
-                        if (IsRequirementType(WIT)) {
-                            // get Templates
-                            getTemplates().then(function (response) {
-                                if (response.count == 0) {
-                                    ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
-                                }
-                                // created tasks alphabetical 
-                                var templates = response.value.sort(SortTemplates);
-                                var chain = Q.when();
-                                templates.forEach(function (template) {
-                                    chain = chain.then(createTaskFromtemplate(witClient, service, WIT, template, teamSettings));
-                                });
-                                return chain;
-
-                            })
-                        }
-                        else {
-                            ShowDialog('Only creates child tasks for Product Backlog Items and Bugs.')
-                        }
-                    })
-            })
+            workClient.getTeamSettings(team)
+                .then(function (teamSettings) {
+                    // Get the current values for a few of the common fields
+                    service.getFieldValues(["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"])
+                        .then(function (value) {
+                            var WIT = value
+                            // only create child task for Product Backlog Item and Bug
+                            IsRequirementOrBugCategory(witClient, WIT)
+                                .then(function (response) {
+                                    if (response == true) {
+                                        // get Templates
+                                        getTemplates().then(function (response) {
+                                            if (response.count == 0) {
+                                                ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
+                                            }
+                                            // created tasks alphabetical 
+                                            var templates = response.value.sort(SortTemplates);
+                                            var chain = Q.when();
+                                            templates.forEach(function (template) {
+                                                chain = chain.then(createTaskFromtemplate(witClient, service, WIT, template, teamSettings));
+                                            });
+                                            return chain;
+                                        })
+                                    }
+                                    else {
+                                        ShowDialog('Only creates child tasks for Product Backlog Items and Bugs.')
+                                    }
+                                })
+                        })
+                })
         }
 
         function AddTasksOnGrid(workItemId) {
@@ -197,34 +200,37 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                 teamId: ctx.team.id
             }
 
-            workClient.getTeamSettings(team).then(function (teamSettings) {
-                // Get the current values for a few of the common fields
-                witClient.getWorkItem(workItemId, ["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"])
-                    .then(function success(response) {
-                        var WIT = response.fields
-                        // only create child task for Product Backlog Item and Bug
-                        if (IsRequirementType(WIT)) {
-                            // get Templates
-                            getTemplates().then(function (response) {
-                                if (response.count == 0) {
-                                    ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
-                                }
-                                // created tasks alphabetical 
-                                var templates = response.value.sort(SortTemplates);
-                                var chain = Q.when();
-                                templates.forEach(function (template) {
-                                    chain = chain.then(createTaskFromtemplate(witClient, null, WIT, template, teamSettings));
-                                });
-                                return chain;
+            workClient.getTeamSettings(team)
+                .then(function (teamSettings) {
+                    // Get the current values for a few of the common fields
+                    witClient.getWorkItem(workItemId, ["System.Id", "System.Title", "System.State", "System.CreatedDate", "System.IterationPath", "System.AreaPath", "System.AssignedTo", "System.RelatedLinkCount", "System.WorkItemType"])
+                        .then(function success(response) {
+                            var WIT = response.fields
+                            // only create child task for Product Backlog Item and Bug
+                            IsRequirementOrBugCategory(witClient, WIT)
+                                .then(function (response) {
+                                    if (response == true) {
+                                        // get Templates
+                                        getTemplates().then(function (response) {
+                                            if (response.count == 0) {
+                                                ShowDialog('Task Templates found: ' + response.count + '. Please add task templates to the Project Team.')
+                                            }
+                                            // created tasks alphabetical 
+                                            var templates = response.value.sort(SortTemplates);
+                                            var chain = Q.when();
+                                            templates.forEach(function (template) {
+                                                chain = chain.then(createTaskFromtemplate(witClient, null, WIT, template, teamSettings));
+                                            });
+                                            return chain;
 
-                            })
-                        }
-                        else {
-                            ShowDialog('Only creates child tasks for Product Backlog Items and Bugs.')
-                            Q.reject();
-                        }
-                    })
-            })
+                                        })
+                                    }
+                                    else {
+                                        ShowDialog('Only creates child tasks for Product Backlog Items and Bugs.')
+                                    }
+                                })
+                        })
+                })
         }
 
         function createTaskFromtemplate(witClient, service, WIT, template, teamSettings) {
@@ -255,17 +261,29 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             }
         }
 
-        function IsRequirementType(WIT) {
-            if (WIT['System.WorkItemType'] == 'Product Backlog Item')
-                return true;
+        function IsRequirementOrBugCategory(witClient, WIT) {
 
-            if (WIT['System.WorkItemType'] == 'Bug')
-                return true;
+            return witClient.getWorkItemTypeCategory(VSS.getWebContext().project.name, 'Microsoft.RequirementCategory')
+                .then(function (response) {
+                    var requirement = response.workItemTypes.find(function (workItemType) { return workItemType.name == WIT['System.WorkItemType']; });
+                    if (requirement != null) {
+                        return true;
+                    }
+                    else {
+                        return witClient.getWorkItemTypeCategory(VSS.getWebContext().project.name, 'Microsoft.BugCategory')
+                            .then(function (response) {
+                                var requirement = response.workItemTypes.find(function (workItemType) { return workItemType.name == WIT['System.WorkItemType']; });
+                                if (requirement != null) {
+                                    return true;
+                                }
+                                else {
+                                    return false;
+                                }
+                            });
+                    }
 
-            if (WIT['System.WorkItemType'] == 'User Story')
-                return true;
-
-            return false;
+                });
+         
         }
 
         function WriteLog(msg) {
