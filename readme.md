@@ -30,10 +30,19 @@ Now you have tasks associated with the User Story or Bug
 
 ## Release notes ##
 
-* v0.3.0 - Enforce correct order when adding child links to work item
+* v0.3.0
+    
+    Enforce correct order when adding child links to work item
 
-* v0.4.0 - Identifier to distinguish templates sets to be added in a single click  <a href="https://github.com/figueiredorui/1-click-tasks/wiki/Group-templates-with-identifier" target="_blank">Wiki</a>
+* v0.4.0
+    
+    Identifier to distinguish templates sets to be added in a single click  <a href="https://github.com/figueiredorui/1-click-tasks/wiki/Group-templates-with-identifier" target="_blank">Wiki</a>
 
+* v0.5.0 
+
+    Add support for custom types
+
+    1-Click-Task option available on Card and Backlog context menu.
 
 
 ## Usage ##
