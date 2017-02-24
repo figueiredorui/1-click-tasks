@@ -341,15 +341,16 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                             }
                             else {
                                 // on grid
-                                var workItemId = 0
                                 if (context.workItemIds && context.workItemIds.length > 0) {
-                                    workItemId = context.workItemIds[0];
+
+                                    context.workItemIds.forEach(function (workItemId) {
+                                        AddTasksOnGrid(workItemId);
+                                    });
                                 }
                                 else if (context.id) {
-                                    workItemId = context.id;
+                                    var workItemId = context.id;
+                                    AddTasksOnGrid(workItemId);
                                 }
-
-                                AddTasksOnGrid(workItemId);
                             }
                         });
                 })
