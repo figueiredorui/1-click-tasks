@@ -41,6 +41,10 @@ Now you have tasks associated with the User Story or Bug
 
     1-Click-Task option available on Card and Backlog context menu.
 
+* v0.6.0
+
+    1-Click-Task option available when selecting multiple work items
+
 ## Learn more ##
 
 The <a href="https://github.com/figueiredorui/1-click-tasks" target="_blank">source</a> for this extension is on GitHub. Take, fork, and extend.
