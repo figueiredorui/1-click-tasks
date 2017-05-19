@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1.0,
     "id": "vsts-work-item-one-click-tasks",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "name": "1-Click Tasks",
     "description": "Add tasks to User story or Bugs from predefined templates using a single click.",
     "public": false,
