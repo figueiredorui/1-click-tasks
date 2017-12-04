@@ -45,6 +45,10 @@ Now you have tasks associated with the User Story or Bug
 
     1-Click-Task option available when selecting multiple work items
 
+* v0.6.3
+
+    Improved logic setting AssignedTo field <a href="https://github.com/figueiredorui/1-click-tasks/issues/15" target="_blank">#15</a>
+
 ## Learn more ##
 
 The <a href="https://github.com/figueiredorui/1-click-tasks" target="_blank">source</a> for this extension is on GitHub. Take, fork, and extend.

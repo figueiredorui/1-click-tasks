@@ -88,12 +88,24 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             else if (taskTemplate.fields['System.IterationPath'].toLowerCase() == '@currentiteration')
                 task.push({ "op": "add", "path": "/fields/System.IterationPath", "value": teamSettings.backlogIteration.name + teamSettings.defaultIteration.path })
 
-            if (taskTemplate.fields['System.AssignedTo'] == null) {
-                if (WIT['System.AssignedTo'] != null)
-                    task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+            // if (taskTemplate.fields['System.AssignedTo'] == null) {
+            //     if (WIT['System.AssignedTo'] != null)
+            //         task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+            // }
+            // else if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me')
+            //     task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": ctx.user.uniqueName })
+
+            if (taskTemplate.fields['System.AssignedTo'] != null) {
+                if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me') {
+                    task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": ctx.user.uniqueName })
+                }
+
+                if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '') {
+                    if (WIT['System.AssignedTo'] != null) {
+                        task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": WIT['System.AssignedTo'] })
+                    }
+                }
             }
-            else if (taskTemplate.fields['System.AssignedTo'].toLowerCase() == '@me')
-                task.push({ "op": "add", "path": "/fields/System.AssignedTo", "value": ctx.user.uniqueName })
 
             witClient.createWorkItem(task, VSS.getWebContext().project.name, 'Task')
                 .then(function (response) {
@@ -251,8 +263,8 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
             if (filters) {
                 var isValid = false;
                 for (var i = 0; i < filters.length; i++) {
-                    var found = filters[i].split(',').find(function(f) { return f.trim() == currentWorkItem["System.WorkItemType"]});
-                    if (found){
+                    var found = filters[i].split(',').find(function (f) { return f.trim() == currentWorkItem["System.WorkItemType"] });
+                    if (found) {
                         isValid = true;
                         break;
                     }
@@ -285,7 +297,7 @@ define(["TFS/WorkItemTracking/Services", "TFS/WorkItemTracking/RestClient", "TFS
                     }
 
                 });
-         
+
         }
 
         function WriteLog(msg) {
