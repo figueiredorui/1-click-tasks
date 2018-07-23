@@ -33,6 +33,9 @@
     "content": {
         "details": {
             "path": "overview.md"
+        },
+        "license": {
+            "path": "LICENSE"
         }
     },
     "targets": [
